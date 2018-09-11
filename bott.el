@@ -12,7 +12,7 @@
 (require 'rcirc)
 (eval-when-compile (require 'subr-x))
 
-(defvar bott-functions (list #'bott-dave)
+(defvar bott-functions (list #'bott-dave #'bott-ydl)
   "Hook functions run when a user message is received.
 The input string is passed to each function in turn until one
 returns a non-nil reply, indicating the input was handled.")
@@ -30,6 +30,17 @@ returns a non-nil reply, indicating the input was handled.")
 If STR does not begin with \"!\", return nil instead."
   (and (= (string-to-char str) ?!)
        (concat "I'm sorry Dave, I'm afraid I can't " (substring str 1))))
+
+(defun bott-ydl (url)
+  "Return title of URL via \"youtube-dl\", or nil on error."
+  (with-temp-buffer
+    (when (eq 0 (call-process "youtube-dl" nil t nil
+                              "--dump-single-json"
+                              "--flat-playlist"
+                              "--no-warnings"
+                              url))
+      (goto-char (point-min))
+      (gethash "title" (json-parse-buffer)))))
 
 (defun bott-fn (proc cmd sender args _line)
   "Intended for `rcirc-receive-message-functions'."
