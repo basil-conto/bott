@@ -17,6 +17,14 @@
 The input string is passed to each function in turn until one
 returns a non-nil reply, indicating the input was handled.")
 
+(defvar bott-ydl-program "youtube-dl"
+  "The name by which to invoke \"youtube-dl\".")
+
+(defvar bott-ydl-switches '("--dump-single-json"
+                            "--flat-playlist"
+                            "--no-warnings")
+  "List of options to pass to `bott-ydl-program'.")
+
 (defun bott-echo (&rest args)
   "Intended for debugging `rcirc-receive-message-functions'."
   (dolist (name '("proc" "cmd" "sender" "args" "line"))
@@ -31,11 +39,8 @@ If STR does not begin with \"!\", return nil instead."
 (defun bott-ydl (url)
   "Return title of URL via \"youtube-dl\", or nil on error."
   (with-temp-buffer
-    (when (eq 0 (call-process "youtube-dl" nil t nil
-                              "--dump-single-json"
-                              "--flat-playlist"
-                              "--no-warnings"
-                              url))
+    (when (eq 0 (apply #'call-process bott-ydl-program nil t nil
+                       (append bott-ydl-switches (list url))))
       (goto-char (point-min))
       (gethash "title" (json-parse-buffer)))))
 
