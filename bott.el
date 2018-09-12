@@ -19,11 +19,8 @@ returns a non-nil reply, indicating the input was handled.")
 
 (defun bott-echo (&rest args)
   "Intended for debugging `rcirc-receive-message-functions'."
-  (let* ((names '("proc" "cmd" "sender" "args" "line"))
-         (fmt   (format ">>> %%-%ds %%S"
-                        (apply #'max (mapcar #'string-width names)))))
-    (dolist (arg args)
-      (message fmt (or (pop names) "???") arg))))
+  (dolist (name '("proc" "cmd" "sender" "args" "line"))
+    (message ">>> %-6s %S" name (pop args))))
 
 (defun bott-dave (str)
   "Return a generic HAL 9000 reply to STR.
