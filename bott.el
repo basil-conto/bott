@@ -35,8 +35,10 @@ If STR does not begin with \"!\", return nil instead."
   "Intended for `rcirc-receive-message-functions'."
   (when-let* (((string= cmd "PRIVMSG"))
               ((not (string= sender (rcirc-nick proc))))
-              (output (run-hook-with-args-until-success
-                       'bott-functions (cadr args)))
+              (output (condition-case err
+                          (run-hook-with-args-until-success
+                           'bott-functions (cadr args))
+                        (error (error-message-string err))))
               (target (car args))
               (target (if (rcirc-channel-p target) target sender)))
     (rcirc-send-privmsg proc target output)))
