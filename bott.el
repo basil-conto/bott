@@ -12,6 +12,11 @@
 (require 'rcirc)
 (eval-when-compile (require 'subr-x))
 
+(defvar bott-functions (list #'bott-dave)
+  "Hook functions run when a user message is received.
+The input string is passed to each function in turn until one
+returns a non-nil reply, indicating the input was handled.")
+
 (defun bott-echo (&rest args)
   "Intended for debugging `rcirc-receive-message-functions'."
   (let* ((names '("proc" "cmd" "sender" "args" "line"))
@@ -20,17 +25,20 @@
     (dolist (arg args)
       (message fmt (or (pop names) "???") arg))))
 
+(defun bott-dave (str)
+  "Return a generic HAL 9000 reply to STR.
+If STR does not begin with \"!\", return nil instead."
+  (and (= (string-to-char str) ?!)
+       (concat "I'm sorry Dave, I'm afraid I can't " (substring str 1))))
+
 (defun bott-fn (proc cmd _sender args _line)
   "Intended for `rcirc-receive-message-functions'."
   (when-let* (((equal cmd "PRIVMSG"))
-              (target (car  args))
-              (input  (cadr args))
+              (target (car args))
               ((rcirc-channel-p target))
-              ((> (length input) 1))
-              ((= (aref input 0) ?!)))
-    (rcirc-send-privmsg proc target
-                        (concat "I'm sorry Dave, I'm afraid I can't "
-                                (substring input 1)))))
+              (output (run-hook-with-args-until-success
+                       'bott-functions (cadr args))))
+    (rcirc-send-privmsg proc target output)))
 
 (defun bott-init ()
   "Shake your bott."
