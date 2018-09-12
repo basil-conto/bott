@@ -31,13 +31,14 @@ If STR does not begin with \"!\", return nil instead."
   (and (= (string-to-char str) ?!)
        (concat "I'm sorry Dave, I'm afraid I can't " (substring str 1))))
 
-(defun bott-fn (proc cmd _sender args _line)
+(defun bott-fn (proc cmd sender args _line)
   "Intended for `rcirc-receive-message-functions'."
-  (when-let* (((equal cmd "PRIVMSG"))
-              (target (car args))
-              ((rcirc-channel-p target))
+  (when-let* (((string= cmd "PRIVMSG"))
+              ((not (string= sender (rcirc-nick proc))))
               (output (run-hook-with-args-until-success
-                       'bott-functions (cadr args))))
+                       'bott-functions (cadr args)))
+              (target (car args))
+              (target (if (rcirc-channel-p target) target sender)))
     (rcirc-send-privmsg proc target output)))
 
 (defun bott-init ()
