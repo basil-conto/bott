@@ -38,10 +38,13 @@ If STR does not begin with \"!\", return nil instead."
               (output (condition-case err
                           (run-hook-with-args-until-success
                            'bott-functions (cadr args))
-                        (error (error-message-string err))))
+                        (error err)))
               (target (car args))
               (target (if (rcirc-channel-p target) target sender)))
-    (rcirc-send-privmsg proc target output)))
+    (if (stringp output)
+        (rcirc-send-privmsg proc target output)
+      (rcirc-cmd-me (format "%s: %s" (car output) (error-message-string output))
+                    proc target))))
 
 (defun bott-init ()
   "Shake your bott."
