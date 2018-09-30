@@ -3,6 +3,19 @@
 ;; Author:   Basil L. Contovounesios <contovob@tcd.ie>
 ;; Homepage: https://gitlab.com/basil-conto/bott
 
+;; Written in 2018 by Basil L. Contovounesios <contovob@tcd.ie>.
+
+;; This file is NOT part of GNU Emacs.
+
+;; To the extent possible under law, the author has dedicated all
+;; copyright and related and neighbouring rights to this software to
+;; the public domain worldwide.  This software is distributed without
+;; any warranty.
+
+;; You should have received a copy of the CC0 Public Domain Dedication
+;; along with this software.  If not, see
+;; <https://creativecommons.org/publicdomain/zero/1.0/>.
+
 ;;; Commentary:
 
 ;; Simple IRC bot built atop `rcirc'.
