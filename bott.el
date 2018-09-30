@@ -38,11 +38,6 @@ returns a non-nil reply, indicating the input was handled.")
                             "--no-warnings")
   "List of options to pass to `bott-ydl-program'.")
 
-(defun bott-echo (&rest args)
-  "Intended for debugging `rcirc-receive-message-functions'."
-  (dolist (name '("proc" "cmd" "sender" "args" "line"))
-    (message ">>> %-6s %S" name (pop args))))
-
 (defun bott-dave (str)
   "Return a generic HAL 9000 reply to STR.
 If STR does not begin with \"!\", return nil instead."
@@ -72,9 +67,25 @@ If STR does not begin with \"!\", return nil instead."
       (rcirc-cmd-me (format "%s: %s" (car output) (error-message-string output))
                     proc target))))
 
+(defun bott-truncate (&rest _)
+  "Truncate `rcirc-debug-buffer'.
+Truncate to last `rcirc-buffer-maximum-lines' when non-nil."
+  (and rcirc-buffer-maximum-lines
+       (buffer-live-p rcirc-debug-buffer)
+       (with-current-buffer rcirc-debug-buffer
+         (save-excursion
+           (goto-char (point-max))
+           (forward-line (- rcirc-buffer-maximum-lines))
+           (let ((inhibit-read-only t))
+             (delete-region (point-min) (point)))))))
+
+
 (defun bott-init ()
   "Shake your bott."
+  (setq rcirc-debug-flag t)
+  (setq rcirc-buffer-maximum-lines messages-buffer-max-lines)
   (rcirc-connect "irc.netsoc.tcd.ie" nil "bott" "blc" "bott.el")
+  (add-hook 'rcirc-receive-message-functions #'bott-truncate)
   (add-hook 'rcirc-receive-message-functions #'bott-fn))
 
 (provide 'bott)
