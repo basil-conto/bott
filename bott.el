@@ -31,7 +31,8 @@ The input string is passed to each function in turn until one
 returns a non-nil reply, indicating the input was handled.")
 
 (defvar bott-ydl-program "youtube-dl"
-  "The name by which to invoke \"youtube-dl\".")
+  "The name by which to invoke \"youtube-dl\".
+See also `bott-ydl-switches'.")
 
 (defvar bott-ydl-switches '("--dump-single-json"
                             "--flat-playlist"
