@@ -42,7 +42,8 @@ returns a non-nil reply, indicating the input was handled.")
   "Return a generic HAL 9000 reply to STR.
 If STR does not begin with \"!\", return nil instead."
   (and (= (string-to-char str) ?!)
-       (concat "I'm sorry Dave, I'm afraid I can't " (substring str 1))))
+       (concat "I'm sorry Dave, I'm afraid I can't "
+               (substring-no-properties str 1))))
 
 (defun bott-ydl (url)
   "Return title of URL via \"youtube-dl\", or nil on error."
