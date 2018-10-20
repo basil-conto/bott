@@ -55,19 +55,15 @@ If STR does not begin with \"!\", return nil instead."
       (gethash "title" (json-parse-buffer)))))
 
 (defun bott-receive-message (proc cmd sender args _line)
-  "Intended for `rcirc-receive-message-functions'."
+  "Gateway between `rcirc' and `bott'.
+Intended for `rcirc-receive-message-functions'."
   (when-let* (((string= cmd "PRIVMSG"))
               ((not (string= sender (rcirc-nick proc))))
-              (output (condition-case err
-                          (run-hook-with-args-until-success
-                           'bott-functions (cadr args))
-                        (error err)))
+              (output (run-hook-with-args-until-success
+                       'bott-functions (cadr args)))
               (target (car args))
               (target (if (rcirc-channel-p target) target sender)))
-    (if (stringp output)
-        (rcirc-send-privmsg proc target output)
-      (rcirc-cmd-me (format "%s: %s" (car output) (error-message-string output))
-                    proc target))))
+    (rcirc-send-privmsg proc target output)))
 
 (defun bott-truncate-log (&rest _)
   "Truncate `rcirc-debug-buffer'.
