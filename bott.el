@@ -44,10 +44,16 @@ for the title of the URL and may contain mIRC colour codes.")
   "The name by which to invoke \"youtube-dl\".
 See also `bott-ydl-switches'.")
 
-(defvar bott-ydl-switches '("--dump-single-json"
-                            "--flat-playlist"
-                            "--no-warnings")
+(defvar bott-ydl-switches
+  '("--dump-single-json" "--flat-playlist" "--no-warnings")
   "List of options to pass to `bott-ydl-program'.")
+
+(defvar bott-curl-program "curl"
+  "The name by which to invoke \"curl\".
+See also `bott-curl-switches'.")
+
+(defvar bott-curl-switches '("--fail" "--location" "--silent")
+  "List of options to pass to `bott-curl-program'.")
 
 (defvar bott-timeout 20
   "Number of seconds to wait for asynchronous process output.")
@@ -101,17 +107,17 @@ Intended for `bott-url-functions', which see."
   "Return process determining whether URL's contents are HTML.
 Intended for `bott-url-functions', which see."
   (bott--url-proc
-   "bott-url-html" (list "curl" "-Ifs" url)
+   "bott-url-html" `(,bott-curl-program "--head" ,@bott-curl-switches ,url)
    (lambda (proc _msg)
      (unless (with-current-buffer (process-buffer proc)
                (string-prefix-p "text/html" (mail-fetch-field "content-type")))
        (process-put proc 'bott-value t)))))
 
 (defun bott-url-curl (url)
-  "Return process using \"curl\" to find title of URL.
+  "Return process using `bott-curl-program' to find title of URL.
 Intended for `bott-url-functions', which see."
   (bott--url-proc
-   "bott-url-curl" (list "curl" "-fs" url)
+   "bott-url-curl" `(,bott-curl-program ,@bott-curl-switches ,url)
    (lambda (proc _msg)
      (when-let (title (dom-by-tag
                        (with-current-buffer (process-buffer proc)
