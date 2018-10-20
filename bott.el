@@ -147,9 +147,9 @@ Uses `bott-url-functions', which see."
                                  (accept-process-output proc bott-timeout)))
                      (process-get proc 'bott-value))
                    procs)))
-      (prog1 (and (stringp val)
-                  (concat (bott--url-nsfw str) val))
-        (mapc #'delete-process procs)))))
+      (mapc #'delete-process procs)
+      (and (stringp val)
+           (concat (bott--url-nsfw str) val)))))
 
 (defun bott-receive-message (proc cmd sender args _line)
   "Gateway between `rcirc' and `bott'.
