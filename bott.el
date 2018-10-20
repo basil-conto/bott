@@ -85,6 +85,21 @@ Intended for `bott-url-functions', which see."
        (and title (not (string= title (url-unhex-string (file-name-base url))))
             (process-put proc 'bott-value (concat "\C-b" title)))))))
 
+(defun bott--url-nsfw (str)
+  "Determine whether STR mentions \"NSFL\" or \"NSFW\".
+Return mIRC-formatted string with trailing space that includes
+the corresponding initialism if found; otherwise return nil."
+  (with-temp-buffer
+    (insert str)
+    (goto-char (point-min))
+    (while (re-search-forward rcirc-url-regexp nil t)
+      (replace-match "" t t))
+    (goto-char (point-min))
+    (and (or (re-search-forward (rx bow "nsfl" eow) nil t)
+             (re-search-forward (rx bow "nsfw" eow) nil t))
+         (format "\C-b\C-c5[%s]\C-o "
+                 (upcase (match-string-no-properties 0))))))
+
 (defun bott-url (str)
   "Return title of first URL found in STR, or nil on failure.
 Uses `bott-url-functions', which see."
@@ -98,7 +113,8 @@ Uses `bott-url-functions', which see."
                                  (accept-process-output proc bott-timeout)))
                      (process-get proc 'bott-value))
                    procs)))
-      (prog1 (and (stringp val) val)
+      (prog1 (and (stringp val)
+                  (concat (bott--url-nsfw str) val))
         (mapc #'delete-process procs)))))
 
 (defun bott-receive-message (proc cmd sender args _line)
