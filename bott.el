@@ -54,8 +54,8 @@ See also `bott-ydl-switches'.")
 
 (defun bott-dave (str)
   "Return a generic HAL 9000 reply to STR.
-If STR does not begin with \"!\", return nil instead."
-  (and (= (string-to-char str) ?!)
+If STR does not begin with a bang command, return nil instead."
+  (and (string-match-p (rx bos ?! graph)  str)
        (concat "I'm sorry Dave, I'm afraid I can't "
                (substring-no-properties str 1))))
 
