@@ -23,12 +23,20 @@
 ;;; Code:
 
 (require 'rcirc)
+(require 'seq)
 (eval-when-compile (require 'subr-x))
 
-(defvar bott-functions (list #'bott-dave #'bott-ydl)
+(defvar bott-functions (list #'bott-dave #'bott-url)
   "Hook functions run when a user message is received.
 The input string is passed to each function in turn until one
 returns a non-nil reply, indicating the input was handled.")
+
+(defvar bott-url-functions (list #'bott-url-ydl)
+  "Hook functions for determining the title of a given URL.
+Each function should return a process object.  They are called in
+turn until the first process exits with a non-nil `bott-value'
+property, indicating the URL was handled.  A string value stands
+for the title of the URL and may contain mIRC colour codes.")
 
 (defvar bott-ydl-program "youtube-dl"
   "The name by which to invoke \"youtube-dl\".
@@ -39,6 +47,9 @@ See also `bott-ydl-switches'.")
                             "--no-warnings")
   "List of options to pass to `bott-ydl-program'.")
 
+(defvar bott-timeout 20
+  "Number of seconds to wait for asynchronous process output.")
+
 (defun bott-dave (str)
   "Return a generic HAL 9000 reply to STR.
 If STR does not begin with \"!\", return nil instead."
@@ -46,13 +57,49 @@ If STR does not begin with \"!\", return nil instead."
        (concat "I'm sorry Dave, I'm afraid I can't "
                (substring-no-properties str 1))))
 
-(defun bott-ydl (url)
-  "Return title of URL via \"youtube-dl\", or nil on error."
-  (with-temp-buffer
-    (when (eq 0 (apply #'call-process bott-ydl-program nil t nil
-                       (append bott-ydl-switches (list url))))
-      (goto-char (point-min))
-      (gethash "title" (json-parse-buffer)))))
+(defun bott--url-proc (name cmd sentinel)
+  "Run CMD in a subprocess with NAME and return the process.
+Call SENTINEL on successful process completion."
+  (make-process :name name
+                :buffer (generate-new-buffer-name (format " *%s*" name))
+                :command cmd
+                :connection-type 'pipe
+                :sentinel (lambda (proc msg)
+                            (when-let* (((not (eq (process-status proc) 'run)))
+                                        (buf (process-buffer proc))
+                                        ((buffer-live-p buf)))
+                              (when (zerop (process-exit-status proc))
+                                (funcall sentinel proc msg))
+                              (kill-buffer buf)))))
+
+(defun bott-url-ydl (url)
+  "Return process using `bott-ydl-program' to find title of URL.
+Intended for `bott-url-functions', which see."
+  (bott--url-proc
+   "bott-url-ydl" `(,bott-ydl-program ,@bott-ydl-switches ,url)
+   (lambda (proc _msg)
+     (let* ((json  (with-current-buffer (process-buffer proc)
+                     (goto-char (point-min))
+                     (json-parse-buffer :null-object nil)))
+            (title (gethash "title" json)))
+       (and title (not (string= title (url-unhex-string (file-name-base url))))
+            (process-put proc 'bott-value (concat "\C-b" title)))))))
+
+(defun bott-url (str)
+  "Return title of first URL found in STR, or nil on failure.
+Uses `bott-url-functions', which see."
+  (when (string-match rcirc-url-regexp str)
+    (let* ((url   (match-string-no-properties 0 str))
+           (procs (mapcar (lambda (fn) (funcall fn url))
+                          bott-url-functions))
+           (val   (seq-some
+                   (lambda (proc)
+                     (while (and (eq (process-status proc) 'run)
+                                 (accept-process-output proc bott-timeout)))
+                     (process-get proc 'bott-value))
+                   procs)))
+      (prog1 (and (stringp val) val)
+        (mapc #'delete-process procs)))))
 
 (defun bott-receive-message (proc cmd sender args _line)
   "Gateway between `rcirc' and `bott'.
