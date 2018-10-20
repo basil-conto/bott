@@ -22,6 +22,7 @@
 
 ;;; Code:
 
+(require 'dom)
 (require 'rcirc)
 (require 'seq)
 (eval-when-compile (require 'subr-x))
@@ -31,7 +32,8 @@
 The input string is passed to each function in turn until one
 returns a non-nil reply, indicating the input was handled.")
 
-(defvar bott-url-functions (list #'bott-url-ydl)
+(defvar bott-url-functions
+  (list #'bott-url-ydl #'bott-url-html #'bott-url-curl)
   "Hook functions for determining the title of a given URL.
 Each function should return a process object.  They are called in
 turn until the first process exits with a non-nil `bott-value'
@@ -94,6 +96,28 @@ Intended for `bott-url-functions', which see."
          (and time  (setq title `(,(bott--secs  time) " " ,@title))
               start (setq title `(,(bott--secs start) "/" ,@title)))
          (process-put proc 'bott-value (apply #'concat title)))))))
+
+(defun bott-url-html (url)
+  "Return process determining whether URL's contents are HTML.
+Intended for `bott-url-functions', which see."
+  (bott--url-proc
+   "bott-url-html" (list "curl" "-Ifs" url)
+   (lambda (proc _msg)
+     (unless (with-current-buffer (process-buffer proc)
+               (string-prefix-p "text/html" (mail-fetch-field "content-type")))
+       (process-put proc 'bott-value t)))))
+
+(defun bott-url-curl (url)
+  "Return process using \"curl\" to find title of URL.
+Intended for `bott-url-functions', which see."
+  (bott--url-proc
+   "bott-url-curl" (list "curl" "-fs" url)
+   (lambda (proc _msg)
+     (when-let (title (dom-by-tag
+                       (with-current-buffer (process-buffer proc)
+                         (libxml-parse-html-region (point-min) (point-max) url))
+                       'title))
+       (process-put proc 'bott-value (concat "\C-b" (dom-text title)))))))
 
 (defun bott--url-nsfw (str)
   "Determine whether STR mentions \"NSFL\" or \"NSFW\".
