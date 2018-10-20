@@ -72,18 +72,28 @@ Call SENTINEL on successful process completion."
                                 (funcall sentinel proc msg))
                               (kill-buffer buf)))))
 
+(defun bott--secs (secs)
+  "Format SECS as a human-readable string."
+  (format-seconds "%h:%z%.2m:%.2s" secs))
+
 (defun bott-url-ydl (url)
   "Return process using `bott-ydl-program' to find title of URL.
 Intended for `bott-url-functions', which see."
   (bott--url-proc
    "bott-url-ydl" `(,bott-ydl-program ,@bott-ydl-switches ,url)
    (lambda (proc _msg)
-     (let* ((json  (with-current-buffer (process-buffer proc)
+     (let* ((base  (url-unhex-string (file-name-base url)))
+            (json  (with-current-buffer (process-buffer proc)
                      (goto-char (point-min))
                      (json-parse-buffer :null-object nil)))
-            (title (gethash "title" json)))
-       (and title (not (string= title (url-unhex-string (file-name-base url))))
-            (process-put proc 'bott-value (concat "\C-b" title)))))))
+            (title (gethash "title"      json))
+            (time  (gethash "duration"   json))
+            (start (gethash "start_time" json)))
+       (when (and title (not (string= title base)))
+         (setq title (list "\C-b" title))
+         (and time  (setq title `(,(bott--secs  time) " " ,@title))
+              start (setq title `(,(bott--secs start) "/" ,@title)))
+         (process-put proc 'bott-value (apply #'concat title)))))))
 
 (defun bott--url-nsfw (str)
   "Determine whether STR mentions \"NSFL\" or \"NSFW\".
