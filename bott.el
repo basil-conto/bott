@@ -172,7 +172,7 @@ Intended for `rcirc-receive-message-functions'."
   "Truncate `rcirc-debug-buffer'.
 Truncate to last `rcirc-buffer-maximum-lines' when non-nil."
   (and rcirc-buffer-maximum-lines
-       (buffer-live-p rcirc-debug-buffer)
+       (buffer-live-p (get-buffer rcirc-debug-buffer))
        (with-current-buffer rcirc-debug-buffer
          (save-excursion
            (goto-char (point-max))
