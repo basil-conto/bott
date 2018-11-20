@@ -124,7 +124,8 @@ Intended for `bott-url-functions', which see."
                        (with-current-buffer (process-buffer proc)
                          (libxml-parse-html-region (point-min) (point-max) url))
                        'title))
-       (process-put proc 'bott-value (concat "\C-b" (dom-text title)))))))
+       (process-put proc 'bott-value
+                    (concat "\C-b" (string-trim (dom-text title))))))))
 
 (defun bott--url-nsfw (str)
   "Determine whether STR mentions \"NSFL\" or \"NSFW\".
