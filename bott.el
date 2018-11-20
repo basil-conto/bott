@@ -90,7 +90,8 @@ Intended for `bott-url-functions', which see."
   (bott--url-proc
    "bott-url-ydl" `(,bott-ydl-program ,@bott-ydl-switches ,url)
    (lambda (proc _msg)
-     (let* ((base  (url-unhex-string (file-name-base url)))
+     (let* ((base  (url-unhex-string
+                    (file-name-sans-extension (url-file-nondirectory url))))
             (json  (with-current-buffer (process-buffer proc)
                      (goto-char (point-min))
                      (json-parse-buffer :null-object nil)))
