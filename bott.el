@@ -61,9 +61,14 @@ See also `bott-curl-switches'.")
 (defun bott-dave (str)
   "Return a generic HAL 9000 reply to STR.
 If STR does not begin with a bang command, return nil instead."
-  (and (string-match-p (rx bos ?! graph)  str)
-       (concat "I'm sorry Dave, I'm afraid I can't "
-               (substring-no-properties str 1))))
+  (and (string-match-p (rx bos ?! graph) str)
+       (pcase (substring-no-properties str 1)
+         ((rx bos "shrug"  eow) "¯\\_(ツ)_/¯")
+         ((rx bos "dunno"  eow) "¯\\(°_o)/¯")
+         ((rx bos "shades" eow) '("(•_•)" "(•_•)>⌐■-■" "(⌐■_■)" "YEEEEAAAHHH"))
+         ((rx bos "fuck" (? eow (+ nonl) bow) (| "off" "you" "u") eow) "no u")
+         ((rx bos "fuck" (? eow (+ nonl) bow) "me" eow) "yes u")
+         (str (concat "I'm sorry Dave, I'm afraid I can't " str)))))
 
 (defun bott--url-proc (name cmd sentinel)
   "Run CMD in a subprocess with NAME and return the process.
