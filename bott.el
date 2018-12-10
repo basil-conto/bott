@@ -168,7 +168,8 @@ Intended for `rcirc-receive-message-functions'."
                        'bott-functions (cadr args)))
               (target (car args))
               (target (if (rcirc-channel-p target) target sender)))
-    (rcirc-send-privmsg proc target output)))
+    (dolist (line (if (consp output) output (list output)))
+      (rcirc-send-privmsg proc target line))))
 
 (defun bott-truncate-log (&rest _)
   "Truncate `rcirc-debug-buffer'.
