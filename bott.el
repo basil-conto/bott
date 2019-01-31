@@ -156,8 +156,7 @@ Uses `bott-url-functions', which see."
                           bott-url-functions))
            (val   (seq-some
                    (lambda (proc)
-                     (while (and (eq (process-status proc) 'run)
-                                 (accept-process-output proc bott-timeout)))
+                     (while (accept-process-output proc bott-timeout))
                      (process-get proc 'bott-value))
                    procs)))
       (mapc #'delete-process procs)
