@@ -125,12 +125,11 @@ Intended for `bott-url-functions', which see."
   (bott--url-proc
    "bott-url-curl" `(,bott-curl-program ,@bott-curl-switches ,url)
    (lambda (proc _msg)
-     (when-let (title (dom-by-tag
-                       (with-current-buffer (process-buffer proc)
-                         (libxml-parse-html-region (point-min) (point-max) url))
-                       'title))
-       (process-put proc 'bott-value
-                    (concat "\C-b" (string-trim (dom-text title))))))))
+     (let* ((dom   (with-current-buffer (process-buffer proc)
+                     (libxml-parse-html-region (point-min) (point-max) url)))
+            (title (string-trim (dom-text (dom-by-tag dom 'title)))))
+       (unless (string-empty-p title)
+         (process-put proc 'bott-value (concat "\C-b" title)))))))
 
 (defun bott--url-nsfw (str)
   "Determine whether STR mentions \"NSFL\" or \"NSFW\".
