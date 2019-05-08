@@ -36,7 +36,7 @@ returns a non-nil reply, indicating the input was handled.")
   (list #'bott-url-ydl #'bott-url-html #'bott-url-curl)
   "Hook functions for determining the title of a given URL.
 Each function should return a process object.  They are called in
-turn until the first process exits with a non-nil `bott-value'
+turn until the first process exits with a non-nil :bott-value
 property, indicating the URL was handled.  A string value stands
 for the title of the URL and may contain mIRC colour codes.")
 
@@ -70,68 +70,82 @@ If STR does not begin with a bang command, return nil instead."
          ((rx bos "fuck" (? eow (+ nonl) bow) "me" eow) "yes u")
          (str (concat "I'm sorry Dave, I'm afraid I can't " str)))))
 
-(defun bott--url-proc (name cmd sentinel)
+(defun bott--url-sentinel (proc _msg)
+  "Process sentinel for `bott--url-proc', which see."
+  (when (and (not (process-live-p proc))
+             (buffer-live-p (process-buffer proc)))
+    (when (zerop (process-exit-status proc))
+      (with-current-buffer (process-buffer proc)
+        (funcall (process-get proc :sentinel) proc)))
+    (kill-buffer (process-buffer proc))))
+
+(defun bott--url-proc (name cmd sentinel &rest props)
   "Run CMD in a subprocess with NAME and return the process.
-Call SENTINEL on successful process completion."
-  (make-process :name name
-                :buffer (generate-new-buffer-name (format " *%s*" name))
-                :command cmd
-                :connection-type 'pipe
-                :sentinel (lambda (proc msg)
-                            (when-let* (((not (eq (process-status proc) 'run)))
-                                        (buf (process-buffer proc))
-                                        ((buffer-live-p buf)))
-                              (when (zerop (process-exit-status proc))
-                                (funcall sentinel proc msg))
-                              (kill-buffer buf)))))
+Add PROPS to its plist and call SENTINEL on successful exit."
+  (let ((proc (make-process
+               :name name
+               :buffer (generate-new-buffer-name (format " *%s*" name))
+               :command cmd
+               :connection-type 'pipe
+               :sentinel #'bott--url-sentinel)))
+    (while props (process-put proc (pop props) (pop props)))
+    (process-put proc :sentinel sentinel)
+    proc))
 
 (defun bott--secs (secs)
   "Format SECS as a human-readable string."
   (format-seconds "%h:%z%.2m:%.2s" secs))
 
+(defun bott--url-ydl-sentinel (proc)
+  "Process sentinel for `bott-url-ydl', which see."
+  (goto-char (point-min))
+  (let* ((base  (url-file-nondirectory (process-get proc :url)))
+         (base  (url-unhex-string (file-name-sans-extension base)))
+         (json  (json-parse-buffer :null-object nil))
+         (title (gethash "title"      json))
+         (time  (gethash "duration"   json))
+         (start (gethash "start_time" json)))
+    (unless (or (not title)
+                (string-blank-p title)
+                (string= title base))
+      (setq title (list "\C-b" title))
+      (and time  (setq title `(,(bott--secs  time) " " ,@title))
+           start (setq title `(,(bott--secs start) "/" ,@title)))
+      (process-put proc :bott-value (apply #'concat title)))))
+
 (defun bott-url-ydl (url)
   "Return process using `bott-ydl-program' to find title of URL.
 Intended for `bott-url-functions', which see."
-  (bott--url-proc
-   "bott-url-ydl" `(,bott-ydl-program ,@bott-ydl-switches ,url)
-   (lambda (proc _msg)
-     (let* ((base  (url-unhex-string
-                    (file-name-sans-extension (url-file-nondirectory url))))
-            (json  (with-current-buffer (process-buffer proc)
-                     (goto-char (point-min))
-                     (json-parse-buffer :null-object nil)))
-            (title (gethash "title"      json))
-            (time  (gethash "duration"   json))
-            (start (gethash "start_time" json)))
-       (unless (or (not title)
-                   (string-blank-p title)
-                   (string= title base))
-         (setq title (list "\C-b" title))
-         (and time  (setq title `(,(bott--secs  time) " " ,@title))
-              start (setq title `(,(bott--secs start) "/" ,@title)))
-         (process-put proc 'bott-value (apply #'concat title)))))))
+  (bott--url-proc "bott-url-ydl"
+                  `(,bott-ydl-program ,@bott-ydl-switches ,url)
+                  #'bott--url-ydl-sentinel :url url))
+
+(defun bott--url-html-sentinel (proc)
+  "Process sentinel for `bott-url-html', which see."
+  (unless (string-prefix-p "text/html" (mail-fetch-field "content-type"))
+    (process-put proc :bott-value t)))
 
 (defun bott-url-html (url)
   "Return process determining whether URL's contents are HTML.
 Intended for `bott-url-functions', which see."
-  (bott--url-proc
-   "bott-url-html" `(,bott-curl-program "--head" ,@bott-curl-switches ,url)
-   (lambda (proc _msg)
-     (unless (with-current-buffer (process-buffer proc)
-               (string-prefix-p "text/html" (mail-fetch-field "content-type")))
-       (process-put proc 'bott-value t)))))
+  (bott--url-proc "bott-url-html"
+                  `(,bott-curl-program "--head" ,@bott-curl-switches ,url)
+                  #'bott--url-html-sentinel :url url))
+
+(defun bott--url-curl-sentinel (proc)
+  "Process sentinel for `bott-url-curl', which see."
+  (let* ((dom   (libxml-parse-html-region (point-min) (point-max)
+                                          (process-get proc :url)))
+         (title (string-trim (dom-text (dom-by-tag dom 'title)))))
+    (unless (string-empty-p title)
+      (process-put proc :bott-value (concat "\C-b" title)))))
 
 (defun bott-url-curl (url)
   "Return process using `bott-curl-program' to find title of URL.
 Intended for `bott-url-functions', which see."
-  (bott--url-proc
-   "bott-url-curl" `(,bott-curl-program ,@bott-curl-switches ,url)
-   (lambda (proc _msg)
-     (let* ((dom   (with-current-buffer (process-buffer proc)
-                     (libxml-parse-html-region (point-min) (point-max) url)))
-            (title (string-trim (dom-text (dom-by-tag dom 'title)))))
-       (unless (string-empty-p title)
-         (process-put proc 'bott-value (concat "\C-b" title)))))))
+  (bott--url-proc "bott-url-curl"
+                  `(,bott-curl-program ,@bott-curl-switches ,url)
+                  #'bott--url-curl-sentinel :url url))
 
 (defun bott--url-nsfw (str)
   "Determine whether STR mentions \"NSFL\" or \"NSFW\".
@@ -158,7 +172,7 @@ Uses `bott-url-functions', which see."
            (val   (seq-some
                    (lambda (proc)
                      (while (accept-process-output proc bott-timeout))
-                     (process-get proc 'bott-value))
+                     (process-get proc :bott-value))
                    procs)))
       (mapc #'delete-process procs)
       (and (stringp val)
