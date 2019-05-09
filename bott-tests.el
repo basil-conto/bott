@@ -65,24 +65,6 @@ increments the reporter by 1."
                    "\C-bUploads from Official Rick Astley"))
     (funcall report)))
 
-(ert-deftest bott-url-ydl-dailymotion ()
-  "Test `bott-url-ydl' with Dailymotion URLs."
-  (let* ((dm     "https://dailymotion.com/")
-         (vid    "https://dai.ly/x206fok")
-         (vids   '("" "?start=41"))
-         (vtitle "04:22 \C-bQueen - I Want To Break Free (Official Video)")
-         (others `(("queen_official"  . "\C-bQueen Official")
-                   ("playlist/x65lx2" . "\C-bQueen")
-                   ("video/x206fok?playlist=x65lx2" . ,vtitle)))
-         (report (bott-tests--report (+ (length vids) (length others)))))
-    (dolist (query vids)
-      (should (equal (bott--url-value (bott-url-ydl (concat vid query)))
-                     vtitle))
-      (funcall report))
-    (pcase-dolist (`(,file . ,title) others)
-      (should (equal (bott--url-value (bott-url-ydl (concat dm file))) title))
-      (funcall report))))
-
 (ert-deftest bott-truncate-log ()
   "Test `bott-truncate-log' behaviour."
   (with-temp-buffer
