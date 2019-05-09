@@ -92,6 +92,19 @@ Add PROPS to its plist and call SENTINEL on successful exit."
     (process-put proc :sentinel sentinel)
     proc))
 
+(defalias 'bott--parse-json
+  (if (fboundp 'json-parse-buffer)
+      (lambda ()
+        (json-parse-buffer :null-object nil))
+    (require 'json)
+    (defvar json-object-type)
+    (declare-function json-read "json" ())
+    (lambda ()
+      (let ((json-object-type 'hash-table))
+        (json-read))))
+  "Read JSON object from current buffer starting at point.
+Objects are decoded as hash-tables and null as nil.")
+
 (defun bott--secs (secs)
   "Format SECS as a human-readable string."
   (format-seconds "%h:%z%.2m:%.2s" secs))
@@ -101,7 +114,7 @@ Add PROPS to its plist and call SENTINEL on successful exit."
   (goto-char (point-min))
   (let* ((base  (url-file-nondirectory (process-get proc :url)))
          (base  (url-unhex-string (file-name-sans-extension base)))
-         (json  (json-parse-buffer :null-object nil))
+         (json  (bott--parse-json))
          (title (gethash "title"      json))
          (time  (gethash "duration"   json))
          (start (gethash "start_time" json)))
