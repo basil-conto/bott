@@ -23,8 +23,12 @@ variables:
 
 before_script:
   - apt-get --quiet update
-  - apt-get --quiet --yes install make emacs-nox
+  - apt-get --quiet --yes install curl emacs-nox make python3-pip
+  - pip3 install youtube-dl
 
 test:
   script:
+    - emacs --version
+    - youtube-dl --version
+    - curl --version
     - make test
