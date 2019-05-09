@@ -23,7 +23,7 @@ variables:
 
 before_script:
   - apt-get --quiet update
-  - apt-get --quiet --yes install emacs-nox
+  - apt-get --quiet --yes install make emacs-nox
 
 test:
   script:
