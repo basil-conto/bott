@@ -192,8 +192,9 @@ Intended for `rcirc-receive-message-functions'."
 
 (defun bott-truncate-log (&rest _)
   "Truncate `rcirc-debug-buffer'.
-Truncate to last `rcirc-buffer-maximum-lines' when non-nil."
+See `rcirc-buffer-maximum-lines' for controlling truncation."
   (and rcirc-buffer-maximum-lines
+       (> rcirc-buffer-maximum-lines 0)
        (buffer-live-p (get-buffer rcirc-debug-buffer))
        (with-current-buffer rcirc-debug-buffer
          (save-excursion
