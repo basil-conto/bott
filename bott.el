@@ -175,6 +175,11 @@ the corresponding initialism if found; otherwise return nil."
          (format "\C-b\C-c5[%s]\C-o "
                  (upcase (match-string-no-properties 0))))))
 
+(defun bott--url-value (proc)
+  "Read entire output of PROC and return its :bott-value."
+  (while (accept-process-output proc bott-timeout))
+  (process-get proc :bott-value))
+
 (defun bott-url (str)
   "Return title of first URL found in STR, or nil on failure.
 Uses `bott-url-functions', which see."
@@ -182,11 +187,7 @@ Uses `bott-url-functions', which see."
     (let* ((url   (match-string-no-properties 0 str))
            (procs (mapcar (lambda (fn) (funcall fn url))
                           bott-url-functions))
-           (val   (seq-some
-                   (lambda (proc)
-                     (while (accept-process-output proc bott-timeout))
-                     (process-get proc :bott-value))
-                   procs)))
+           (val   (seq-some #'bott--url-value procs)))
       (mapc #'delete-process procs)
       (and (stringp val)
            (concat (bott--url-nsfw str) val)))))
