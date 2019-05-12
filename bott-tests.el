@@ -79,6 +79,4 @@ increments the reporter by 1."
         (should (= (line-number-at-pos (point-max))
                    (1+ (if (> max 0) max lines))))))))
 
-(provide 'bott-tests)
-
 ;;; bott-tests.el ends here
