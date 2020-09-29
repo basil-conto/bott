@@ -151,6 +151,7 @@ Intended for `bott-url-functions', which see."
                                           (process-get proc :url)))
          (title (string-trim (dom-text (dom-by-tag dom 'title)))))
     (unless (string-empty-p title)
+      (setq title (replace-regexp-in-string "[\n\r]+" "" title t t))
       (process-put proc :bott-value (concat "\C-b" title)))))
 
 (defun bott-url-curl (url)
