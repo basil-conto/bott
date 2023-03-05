@@ -222,7 +222,7 @@ See `rcirc-buffer-maximum-lines' for controlling truncation."
   "Shake your bott."
   (setq rcirc-debug-flag t)
   (setq rcirc-buffer-maximum-lines messages-buffer-max-lines)
-  (rcirc-connect "irc.netsoc.tcd.ie" nil "bott" "blc" "bott.el")
+  (rcirc-connect "127.0.0.1" 6667 "bott" "blc" "bott.el")
   (add-hook 'rcirc-receive-message-functions #'bott-truncate-log)
   (add-hook 'rcirc-receive-message-functions #'bott-receive-message))
 
