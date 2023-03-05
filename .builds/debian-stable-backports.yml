@@ -1,0 +1,36 @@
+# bott.el support for the SourceHut protocol for CI
+#
+# Author:   Basil L. Contovounesios <contovob@tcd.ie>
+# Homepage: https://git.sr.ht/~blc/bott
+#
+# Written in 2023 by Basil L. Contovounesios <contovob@tcd.ie>.
+#
+# This file is NOT part of GNU Emacs.
+#
+# To the extent possible under law, the author has dedicated all
+# copyright and related and neighbouring rights to this software to
+# the public domain worldwide.  This software is distributed without
+# any warranty.
+#
+# You should have received a copy of the CC0 Public Domain Dedication
+# along with this software.  If not, see
+# <https://creativecommons.org/publicdomain/zero/1.0/>.
+
+image: debian/stable
+repositories:
+  backports: http://deb.debian.org/debian stable-backports main
+packages:
+  - curl
+  - emacs-nox
+  - make
+  - yt-dlp
+sources:
+  - https://git.sr.ht/~blc/bott
+tasks:
+  - test: |
+      cd bott
+      make test
+triggers:
+  - action: email
+    condition: failure
+    to: Basil L. Contovounesios <contovob@tcd.ie>

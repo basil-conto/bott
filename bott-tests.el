@@ -1,7 +1,7 @@
 ;;; bott-tests.el --- tests for bott.el -*- lexical-binding: t -*-
 
 ;; Author:   Basil L. Contovounesios <contovob@tcd.ie>
-;; Homepage: https://gitlab.com/basil-conto/bott
+;; Homepage: https://git.sr.ht/~blc/bott
 
 ;; Written in 2019 by Basil L. Contovounesios <contovob@tcd.ie>.
 
