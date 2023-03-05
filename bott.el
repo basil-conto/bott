@@ -40,7 +40,7 @@ turn until the first process exits with a non-nil :bott-value
 property, indicating the URL was handled.  A string value stands
 for the title of the URL and may contain mIRC colour codes.")
 
-(defvar bott-ydl-program "youtube-dl"
+(defvar bott-ydl-program "yt-dlp"
   "The name by which to invoke \"youtube-dl\".
 See also `bott-ydl-switches'.")
 

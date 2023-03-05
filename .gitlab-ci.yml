@@ -16,19 +16,18 @@
 # along with this software.  If not, see
 # <https://creativecommons.org/publicdomain/zero/1.0/>.
 
-image: debian:buster
+image: debian:bullseye-backports
 
 variables:
   GIT_STRATEGY: clone
 
 before_script:
   - apt-get --quiet update
-  - apt-get --quiet --yes install curl emacs-nox make python3-pip
-  - pip3 install youtube-dl
+  - apt-get --quiet --yes install curl emacs-nox make yt-dlp
 
 test:
   script:
     - emacs --version
-    - youtube-dl --version
+    - yt-dlp --version
     - curl --version
     - make test
